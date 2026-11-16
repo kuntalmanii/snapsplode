@@ -42,31 +42,64 @@ export class Overlay {
 
     if (style === 'subtle') {
       ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = grabbing ? 0.55 : 0.35;
-      for (const i of FINGERTIPS) { ctx.beginPath(); ctx.arc(points[i].x, points[i].y, 3, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = grabbing ? 0.8 : 0.45;
+      for (const i of FINGERTIPS) {
+        ctx.beginPath();
+        ctx.arc(points[i].x, points[i].y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.globalAlpha = 1;
       return;
     }
 
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Skeleton bone connections
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.globalAlpha = 0.85;
     ctx.beginPath();
     for (const [a, b] of BONES) { ctx.moveTo(points[a].x, points[a].y); ctx.lineTo(points[b].x, points[b].y); }
     ctx.stroke();
-    ctx.fillStyle = '#fff';
-    for (const p of points) { ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, Math.PI * 2); ctx.fill(); }
 
-    // Ring around the palm: full gold when gripping, otherwise an arc showing openness.
+    // Joint landmarks
+    ctx.fillStyle = '#ffffff';
+    for (const p of points) { ctx.beginPath(); ctx.arc(p.x, p.y, 2.8, 0, Math.PI * 2); ctx.fill(); }
+
+    // Ring around the palm: subtle full track ring, plus an active glowing arc showing openness.
     const cx = (points[0].x + points[9].x) / 2, cy = (points[0].y + points[9].y) / 2;
     const r = Math.hypot(points[0].x - points[9].x, points[0].y - points[9].y) * 1.75;
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = grabbing ? GESTURE_COLORS.fist : color;
-    ctx.globalAlpha = grabbing ? 0.85 : 0.55;
+
+    // Background track ring
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.globalAlpha = 0.4;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (grabbing ? 1 : Math.max(0.03, openness)));
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.globalAlpha = 1;
+
+    // Foreground openness arc
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = grabbing ? GESTURE_COLORS.fist : color;
+    ctx.globalAlpha = grabbing ? 0.95 : 0.85;
+    ctx.beginPath();
+    const endAngle = -Math.PI / 2 + Math.PI * 2 * (grabbing ? 1 : Math.max(0.03, openness));
+    ctx.arc(cx, cy, r, -Math.PI / 2, endAngle);
+    ctx.stroke();
+
+    // Glowing tip dot at the leading edge of the openness arc
+    if (!grabbing && openness > 0.05) {
+      const tipX = cx + Math.cos(endAngle) * r;
+      const tipY = cy + Math.sin(endAngle) * r;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   // Dashed bar between two holding hands; it fills as they spread apart.
@@ -136,12 +169,12 @@ export class Overlay {
       ctx.textAlign = isLeft ? 'right' : 'left';
       ctx.textBaseline = 'alphabetic';
       ctx.shadowColor = 'rgba(0,0,0,0.95)';
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 8;
       ctx.fillStyle = '#fff';
-      ctx.font = '650 14px ui-sans-serif, -apple-system, sans-serif';
+      ctx.font = '650 13.5px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
       ctx.fillText(l.name, edge, l.ly, textW);
-      ctx.fillStyle = '#d7dde6';
-      ctx.font = '12px ui-sans-serif, -apple-system, sans-serif';
+      ctx.fillStyle = '#c8d0dc';
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
       ctx.fillText(l.note, edge, l.ly + 16, textW);
       ctx.shadowBlur = 0;
     };
@@ -154,17 +187,17 @@ export class Overlay {
     if (alpha <= 0.01) return;
     const { ctx, w } = this;
     const fits = x + 180 < w;
-    const px = fits ? x : w - 16;
+    const px = fits ? x : w - 20;
     ctx.globalAlpha = alpha;
     ctx.textAlign = fits ? 'left' : 'right';
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(0,0,0,0.95)';
+    ctx.shadowBlur = 12;
     ctx.fillStyle = '#fff';
-    ctx.font = '750 32px ui-sans-serif, -apple-system, sans-serif';
-    ctx.fillText(name, px, y, w - px > 0 && fits ? w - px - 16 : w * 0.6);
-    ctx.fillStyle = '#e0e5ec';
-    ctx.font = '14px ui-sans-serif, -apple-system, sans-serif';
-    ctx.fillText(blurb, px, y + 24, fits ? w - px - 16 : w * 0.6);
+    ctx.font = '750 32px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+    ctx.fillText(name, px, y, w - px > 0 && fits ? w - px - 20 : w * 0.6);
+    ctx.fillStyle = '#d0d7e2';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
+    ctx.fillText(blurb, px, y + 26, fits ? w - px - 20 : w * 0.6);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
   }

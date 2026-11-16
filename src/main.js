@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { haptics } from './audio.js';
 import { ALL_OBJECTS, CATEGORIES, stepObject } from './catalog/index.js';
 import { compileObject } from './compile.js';
 import { HandTracks, predictPalm, twoHandPose, wrapAngle } from './hands.js';
@@ -187,9 +188,11 @@ function onSnap() {
   if (app.state === 'empty') {
     const h = view.hands[0];
     summon(h ? screenToWorld(h.screenPalm) : null);
-    toast('Snap!');
+    haptics.summon();
+    toast('Snap! Object Summoned');
   } else {
     dissolve();
+    haptics.dissolve();
   }
   flashGuide('snap');
 }
@@ -305,6 +308,7 @@ function switchObject(step) {
   const where = def.category !== app.object.category ? ` · ${def.category}` : '';
   const later = app.state === 'empty' ? ' · snap to show it' : '';
   toast(`${step > 0 ? 'Next' : 'Back'}: ${def.name}${where}${later}`);
+  haptics.step();
   selectObject(def, { auto: true, announce: false });
 }
 
@@ -330,7 +334,12 @@ function renderTabs() {
     b.textContent = `${c.id} · ${c.items.length}`;
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(c.id === activeCategory));
-    b.onclick = () => { activeCategory = c.id; renderTabs(); renderChips(); };
+    b.onclick = () => {
+      haptics.click();
+      activeCategory = c.id;
+      renderTabs();
+      renderChips();
+    };
     return b;
   }));
 }
@@ -339,8 +348,15 @@ function renderChips() {
   $('chips').replaceChildren(...cat.items.map((o) => {
     const b = document.createElement('button');
     b.textContent = o.name;
-    b.setAttribute('aria-pressed', String(o.id === app.object.id));
-    b.onclick = () => selectObject(ALL_OBJECTS.find((x) => x.id === o.id), { auto: true });
+    const isSelected = o.id === app.object.id;
+    b.setAttribute('aria-pressed', String(isSelected));
+    b.onclick = () => {
+      haptics.click();
+      selectObject(ALL_OBJECTS.find((x) => x.id === o.id), { auto: true });
+    };
+    if (isSelected) {
+      setTimeout(() => b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+    }
     return b;
   }));
 }
@@ -353,6 +369,7 @@ $('guide').replaceChildren(...GUIDE.map((g) => {
   const li = document.createElement('li');
   li.dataset.key = g.key;
   const icon = document.createElement('span');
+  icon.className = 'guide-icon-roundel';
   icon.textContent = g.icon;
   icon.setAttribute('aria-hidden', 'true');
   const body = document.createElement('span');
@@ -370,6 +387,7 @@ let flashKey = null, flashUntil = 0;
 function flashGuide(k) { flashKey = k; flashUntil = performance.now() + 700; }
 
 $('panel-toggle').onclick = () => {
+  haptics.click();
   const c = $('panel').classList.toggle('collapsed');
   $('panel-toggle').setAttribute('aria-expanded', String(!c));
 };
@@ -409,9 +427,16 @@ function updateUi(now) {
   const particles = Math.round(PARTICLES * app.visibleFraction);
   const heard = now - snap.transients.lastHit < 300;
   const mic = snap.mode === 'mic' ? 'mic on' : 'mic off · flick to snap';
-  $('stats').innerHTML = `<b>${fps}</b> fps · <b>${Math.round(particles / 1000)}k</b> particles<br>`
-    + (app.hasCamera ? `hands <b>${tracker?.rate ?? 0}</b> fps · ${Math.round(tracker?.ms ?? 0)} ms ${tracker?.delegate ?? ''}<br>` : 'camera off<br>')
-    + `zoom ${app.userScale.toFixed(2)}× · <span class="${heard ? 'heard' : ''}">${heard ? 'snap heard' : mic}</span>`;
+  const trackingBadge = app.hasCamera
+    ? `<span><b>${tracker?.rate ?? 0}</b> fps hand · ${Math.round(tracker?.ms ?? 0)}ms</span>`
+    : `<span class="muted">camera off</span>`;
+  const micBadge = `<span class="${heard ? 'heard' : ''}">${heard ? '⚡ snap heard' : mic}</span>`;
+  $('stats').innerHTML = `
+    <div class="stat-item"><span class="status-dot"></span><b>${fps}</b> fps</div>
+    <div class="stat-item"><b>${Math.round(particles / 1000)}k</b> pts</div>
+    <div class="stat-item">${trackingBadge}</div>
+    <div class="stat-item">${micBadge}</div>
+  `;
 
   // Inspect card sits beside the highlighted part, kept on screen.
   const card = $('inspect');
@@ -528,6 +553,8 @@ function frame(now) {
 
 // ---------- start ----------
 async function start() {
+  haptics.init();
+  haptics.click();
   const btn = $('start-btn');
   const status = $('start-status');
   btn.disabled = true;
@@ -595,7 +622,12 @@ if (window.innerWidth < 900) {
   $('panel-toggle').setAttribute('aria-expanded', 'false');
 }
 $('start-btn').onclick = start;
-for (const b of document.querySelectorAll('#hand-style button')) b.onclick = () => setHandStyle(b.dataset.style);
+for (const b of document.querySelectorAll('#hand-style button')) {
+  b.onclick = () => {
+    haptics.click();
+    setHandStyle(b.dataset.style);
+  };
+}
 // H cycles the hand markers, for switching quickly mid-lesson.
 window.addEventListener('keydown', (e) => {
   if (e.key.toLowerCase() !== 'h' || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea')) return;

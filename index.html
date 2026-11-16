@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SnapSplode</title>
+    <title>SnapSplode · Spatial 3D Wonder Engine</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -11,28 +11,63 @@
     <canvas id="scene"></canvas>
     <canvas id="overlay"></canvas>
 
-    <header class="brand"><span class="brand-mark"></span>SnapSplode</header>
+    <header class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text">SnapSplode</span>
+      <span class="brand-badge">Spatial 3D</span>
+    </header>
 
     <aside id="panel" class="glass">
-      <button id="panel-toggle" aria-label="Collapse panel" aria-expanded="true">‹</button>
+      <button id="panel-toggle" aria-label="Collapse panel" aria-expanded="true">
+        <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
       <div class="panel-body">
-        <span id="obj-cat" class="eyebrow"></span>
-        <h1 id="obj-name"></h1>
-        <p id="obj-blurb" class="muted"></p>
+        <div class="obj-header">
+          <span id="obj-cat" class="eyebrow"></span>
+          <h1 id="obj-name"></h1>
+          <p id="obj-blurb" class="muted"></p>
+        </div>
 
-        <div class="row"><span class="label">Scene</span><span id="state-pill" class="pill"></span></div>
-        <div class="row"><span class="label">Hands</span><span id="gesture-now" class="gesture-now">No hand</span></div>
-        <div class="row">
-          <span class="label" id="hand-style-label">Hand markers</span>
-          <div id="hand-style" class="segmented" role="group" aria-labelledby="hand-style-label" title="Press H to switch">
-            <button data-style="off">Off</button><button data-style="subtle">Subtle</button><button data-style="full">Full</button>
+        <div class="section-card">
+          <div class="row">
+            <span class="label">Scene</span>
+            <span id="state-pill" class="pill"></span>
+          </div>
+          <div class="row">
+            <span class="label">Hands</span>
+            <span id="gesture-now" class="gesture-now">No hand</span>
+          </div>
+          <div class="row">
+            <span class="label" id="hand-style-label">Markers</span>
+            <div id="hand-style" class="segmented" role="group" aria-labelledby="hand-style-label" title="Press H to switch">
+              <button data-style="off">Off</button><button data-style="subtle">Subtle</button><button data-style="full">Full</button>
+            </div>
           </div>
         </div>
 
-        <div class="meter"><div class="row"><span class="label">Hand openness</span><span id="open-val">0%</span></div><div class="bar"><i id="open-bar"></i></div></div>
-        <div class="meter"><div class="row"><span class="label">Exploded view</span><span id="explode-val">0%</span></div><div class="bar gold"><i id="explode-bar"></i></div></div>
+        <div class="meters-card">
+          <div class="meter">
+            <div class="row">
+              <span class="label">Hand Openness</span>
+              <span id="open-val" class="meter-val">0%</span>
+            </div>
+            <div class="bar-track"><i id="open-bar" class="bar-fill"></i></div>
+          </div>
+          <div class="meter">
+            <div class="row">
+              <span class="label">Explosion</span>
+              <span id="explode-val" class="meter-val">0%</span>
+            </div>
+            <div class="bar-track"><i id="explode-bar" class="bar-fill gold"></i></div>
+          </div>
+        </div>
 
-        <h2 class="label">Gestures</h2>
+        <div class="guide-header">
+          <h2 class="label">Gestures</h2>
+          <span class="guide-shortcut">H for markers</span>
+        </div>
         <ul id="guide"></ul>
       </div>
     </aside>
@@ -49,20 +84,47 @@
 
     <nav id="picker" class="glass">
       <div id="tabs" role="tablist"></div>
-      <div id="chips"></div>
+      <div class="chips-container">
+        <div id="chips"></div>
+      </div>
     </nav>
 
     <section id="start">
-      <div class="start-card">
-        <span class="brand-mark big"></span>
+      <div class="start-card glass">
+        <div class="brand-mark-wrapper">
+          <span class="brand-mark big" aria-hidden="true"></span>
+        </div>
         <h1>SnapSplode</h1>
-        <p>Snap your fingers, then pull famous objects apart with your hands.</p>
-        <ul>
-          <li><b>Camera</b> tracks your hands</li>
-          <li><b>Microphone</b> hears your snap</li>
-        </ul>
-        <button id="start-btn">Enable camera &amp; mic</button>
-        <p class="muted small">Everything runs on this computer. Video and audio are never recorded or uploaded.</p>
+        <p class="start-subtitle">Snap your fingers, then pull iconic 3D wonders apart with your bare hands.</p>
+        <div class="feature-pills">
+          <div class="feature-pill">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span><b>Camera</b> tracks hands in 3D</span>
+          </div>
+          <div class="feature-pill">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            <span><b>Microphone</b> hears finger snap</span>
+          </div>
+        </div>
+        <button id="start-btn">
+          <span class="btn-text">Enable Camera &amp; Mic</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+        <div class="privacy-guarantee">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span class="muted small">100% On-Device · Video and audio are never recorded or transmitted</span>
+        </div>
         <p id="start-status" class="small" role="status"></p>
       </div>
     </section>
