@@ -31,6 +31,24 @@ test('recognises each gesture', () => {
   assert.equal(hand({ pinch: true }).gesture, 'pinch');
 });
 
+test('open hand with slightly relaxed pinky remains open rather than triggering three', () => {
+  const pts = Array.from({ length: 21 }, () => ({ x: 0, y: 0, z: 0 }));
+  const set = (i, x, y, z = 0) => { pts[i] = { x, y, z }; };
+  const finger = (mcp, x, extend) => {
+    set(mcp, x, 1);
+    if (extend) { set(mcp + 1, x, 1.4); set(mcp + 2, x, 1.7); set(mcp + 3, x, 2.0); }
+    else { set(mcp + 1, x, 1.35); set(mcp + 2, x, 1.05, 0.3); set(mcp + 3, x, 0.8, 0.3); }
+  };
+  finger(5, -0.3, true);
+  finger(9, -0.1, true);
+  finger(13, 0.1, true);
+  // Pinky tip at 1.09x PIP distance (previously failed the 1.12 threshold and became 'three')
+  finger(17, 0.3, true);
+  set(20, 0.3, 1.4 * 1.09);
+  set(1, -0.3, 0.3); set(2, -0.5, 0.5); set(3, -0.7, 0.7); set(4, -0.9, 0.9);
+  assert.equal(analyseHand(pts, pts).gesture, 'open');
+});
+
 test('openness tracks how far the hand is open', () => {
   assert.ok(hand().openness > 0.9);
   assert.ok(hand({ index: 0, middle: 0, ring: 0, pinky: 0 }).openness < 0.1);
@@ -48,6 +66,15 @@ test('GestureFilter ignores a pose that is only passed through', () => {
   assert.equal(f.update('peace', 140), 'open');
   assert.equal(f.update('fist', 180), 'open');
   assert.equal(f.update('fist', 300), 'fist');
+});
+
+test('GestureFilter does not get stuck in none when single-frame jitter occurs', () => {
+  const f = new GestureFilter(110);
+  assert.equal(f.update('open', 0), 'none');
+  assert.equal(f.update('relaxed', 33), 'none');
+  assert.equal(f.update('open', 66), 'none');
+  assert.equal(f.update('relaxed', 99), 'none');
+  assert.equal(f.update('open', 132), 'open');
 });
 
 test('OneEuro smooths jitter on a still value', () => {

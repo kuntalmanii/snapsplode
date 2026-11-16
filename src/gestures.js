@@ -11,8 +11,8 @@ const FINGERS = [
   { name: 'pinky', mcp: 17, pip: 18, tip: 20 },
 ];
 
-const OPEN_LOW = 1.1; // fingertip-to-wrist in palm lengths: a closed fist
-const OPEN_HIGH = 1.8; // and a fully spread hand
+const OPEN_LOW = 1.05; // fingertip-to-wrist in palm lengths: a closed fist
+const OPEN_HIGH = 1.70; // and a comfortably spread open hand
 const PINCH_TOUCH = 0.34;
 const SNAP_READY = 0.7;
 
@@ -24,7 +24,7 @@ export function analyseHand(world, image) {
   let reach = 0;
   for (const f of FINGERS) {
     const tip = dist(world[f.tip], wrist);
-    extended[f.name] = tip > dist(world[f.pip], wrist) * 1.12;
+    extended[f.name] = tip > dist(world[f.pip], wrist) * 1.06;
     reach += tip / palm;
   }
   reach /= FINGERS.length;
@@ -43,7 +43,7 @@ export function analyseHand(world, image) {
   else if (index && middle && !ring && !pinky) gesture = 'peace';
   else if (index && middle && ring && !pinky) gesture = 'three';
   else if (index && !middle && !ring && !pinky) gesture = 'point';
-  else if (count === 4 && openness > 0.45) gesture = 'open';
+  else if (count === 4 && openness > 0.4) gesture = 'open';
 
   const palmCentre = [0, 5, 9, 13, 17].reduce(
     (s, i) => ({ x: s.x + image[i].x / 5, y: s.y + image[i].y / 5 }),
@@ -73,11 +73,36 @@ export class GestureFilter {
     this.current = 'none';
     this.candidate = 'none';
     this.since = 0;
+    this.devSince = null;
+    this.devRaw = null;
   }
 
   update(raw, now) {
-    if (raw !== this.candidate) { this.candidate = raw; this.since = now; }
-    if (raw !== this.current && now - this.since >= (DELIBERATE_MS[raw] ?? this.holdMs)) this.current = raw;
+    const devThreshold = Math.min(45, this.holdMs * 0.45);
+    if (this.candidate === 'none') {
+      this.candidate = raw;
+      this.since = now;
+      this.devSince = null;
+      this.devRaw = null;
+    } else if (raw === this.candidate) {
+      this.devSince = null;
+      this.devRaw = null;
+    } else {
+      if (this.devRaw !== raw) {
+        this.devRaw = raw;
+        this.devSince = now;
+      } else if (now - this.devSince >= devThreshold) {
+        this.candidate = raw;
+        this.since = this.devSince;
+        this.devSince = null;
+        this.devRaw = null;
+      }
+    }
+
+    const needed = DELIBERATE_MS[this.candidate] ?? this.holdMs;
+    if (this.candidate !== this.current && now - this.since >= needed) {
+      this.current = this.candidate;
+    }
     return this.current;
   }
 }

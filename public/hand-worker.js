@@ -48,8 +48,8 @@ self.onmessage = async ({ data }) => {
       if (r?.landmarks) {
         hands = r.landmarks.map((image, i) => ({
           image,
-          world: r.worldLandmarks[i],
-          side: r.handedness[i]?.[0]?.categoryName,
+          world: r.worldLandmarks?.[i] || image,
+          side: r.handedness?.[i]?.[0]?.categoryName,
         }));
       }
     } catch (err) {
